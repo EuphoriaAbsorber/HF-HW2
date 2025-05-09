@@ -6,7 +6,7 @@ import (
 )
 
 type RepositoryInterface interface {
-	CreateMarble(ctx context.Context, asset *model.Marble) error
+	CreateMarble(ctx context.Context, marble *model.Marble) error
 }
 
 type Service struct {
