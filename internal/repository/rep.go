@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"main/internal/model"
+	"time"
 
 	"github.com/hyperledger/fabric-chaincode-go/shim"
 )
@@ -21,35 +22,11 @@ func (rep *RepositoryRealization) CreateMarble(ctx context.Context, marble *mode
 	if ptrStub == nil {
 		return fmt.Errorf("no 'stub' in context")
 	}
-
 	stub := ptrStub.(shim.ChaincodeStubInterface)
-	// txTimestamp, err := stub.GetTxTimestamp()
-	// if err != nil {
-	// 	return fmt.Errorf("failed to get tx timestamp: %w", err)
-	// }
-
-	// asset.CreatedAt = txTimestamp.AsTime()
-	// asset.UpdatedAt = txTimestamp.AsTime()
-
-	// buf, err := json.Marshal(asset)
-	// if err != nil {
-	// 	return fmt.Errorf("failed to json marshal asset: %w", err)
-	// }
-
-	// err = stub.PutState(asset.ID, buf)
-	// if err != nil {
-	// 	return fmt.Errorf("failed to stub put asset: %w", err)
-	// }
-
-	//objectType := "marble"
-	//marble := &marble{objectType, marbleName, color, size, owner}
 	marbleJSONasBytes, err := json.Marshal(marble)
 	if err != nil {
 		return fmt.Errorf("%s", err.Error())
 	}
-	//Alternatively, build the marble json string manually if you don't want to use struct marshalling
-	//marbleJSONasString := `{"docType":"Marble",  "name": "` + marbleName + `", "color": "` + color + `", "size": ` + strconv.Itoa(size) + `, "owner": "` + owner + `"}`
-	//marbleJSONasBytes := []byte(str)
 
 	// === Save marble to state ===
 	err = stub.PutState(marble.Name, marbleJSONasBytes)
@@ -138,4 +115,35 @@ func (rep *RepositoryRealization) TransferMarble(ctx context.Context, marbleToTr
 		return fmt.Errorf("%s", err.Error())
 	}
 	return nil
+}
+
+func (rep *RepositoryRealization) GetMarbleHistory(ctx context.Context, id string) (map[string]model.Marble, map[string]time.Time, error) {
+	ptrStub := ctx.Value("stub")
+	if ptrStub == nil {
+		return nil, nil, fmt.Errorf("no 'stub' in context")
+	}
+	stub := ptrStub.(shim.ChaincodeStubInterface)
+
+	iter, err := stub.GetHistoryForKey(id)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to get history for asset: %w", err)
+	}
+
+	resultAssets := make(map[string]model.Marble, 0)
+	resultTimstamps := make(map[string]time.Time, 0)
+
+	for iter.HasNext() {
+		kv, err := iter.Next()
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to read asset history: %w", err)
+		}
+		var asset model.Marble
+		err = json.Unmarshal(kv.Value, &asset)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to unmarshal asset history: %w", err)
+		}
+		resultTimstamps[kv.TxId] = kv.Timestamp.AsTime()
+		resultAssets[kv.TxId] = asset
+	}
+	return resultAssets, resultTimstamps, nil
 }

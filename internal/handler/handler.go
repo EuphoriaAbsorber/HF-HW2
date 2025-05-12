@@ -28,6 +28,11 @@ func (s *Service) InitMarble(hlfContext contractapi.TransactionContextInterface,
 	ctx := context.Background()
 	ctx = context.WithValue(ctx, "stub", stub)
 
+	_, err := hlfContext.GetClientIdentity().GetX509Certificate()
+	if err != nil {
+		return fmt.Errorf("failed to get x509 certificate: %v", err)
+	}
+
 	color = strings.ToLower(color)
 	owner = strings.ToLower(owner)
 	marbleName := name
@@ -57,6 +62,11 @@ func (s *Service) ReadMarble(hlfContext contractapi.TransactionContextInterface,
 	ctx := context.Background()
 	ctx = context.WithValue(ctx, "stub", stub)
 
+	_, err := hlfContext.GetClientIdentity().GetX509Certificate()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get x509 certificate: %v", err)
+	}
+
 	bytes, err := s.bl.ReadMarble(ctx, name)
 	if err != nil {
 		return nil, err
@@ -77,6 +87,12 @@ func (s *Service) Delete(hlfContext contractapi.TransactionContextInterface, mar
 	stub := hlfContext.GetStub()
 	ctx := context.Background()
 	ctx = context.WithValue(ctx, "stub", stub)
+
+	_, err := hlfContext.GetClientIdentity().GetX509Certificate()
+	if err != nil {
+		return fmt.Errorf("failed to get x509 certificate: %v", err)
+	}
+
 	// to maintain the color~name index, we need to read the marble first and get its color
 	valAsbytes, err := stub.GetState(marbleName) //get the marble from chaincode state
 	if err != nil {
@@ -99,6 +115,10 @@ func (s *Service) TransferMarble(hlfContext contractapi.TransactionContextInterf
 	stub := hlfContext.GetStub()
 	ctx := context.Background()
 	ctx = context.WithValue(ctx, "stub", stub)
+	_, err := hlfContext.GetClientIdentity().GetX509Certificate()
+	if err != nil {
+		return fmt.Errorf("failed to get x509 certificate: %v", err)
+	}
 	newOwner = strings.ToLower(newOwner)
 	fmt.Println("- start transferMarble ", marbleName, newOwner)
 	s.bl.TransferMarble(ctx, marbleName, newOwner)
@@ -110,6 +130,10 @@ func (s *Service) TransferMarblesBasedOnColor(hlfContext contractapi.Transaction
 	stub := hlfContext.GetStub()
 	ctx := context.Background()
 	ctx = context.WithValue(ctx, "stub", stub)
+	_, err := hlfContext.GetClientIdentity().GetX509Certificate()
+	if err != nil {
+		return fmt.Errorf("failed to get x509 certificate: %v", err)
+	}
 	newOwner = strings.ToLower(newOwner)
 	fmt.Println("- start transferMarblesBasedOnColor ", color, newOwner)
 	s.bl.TransferMarblesBasedOnColor(ctx, color, newOwner)
@@ -119,7 +143,7 @@ func (s *Service) TransferMarblesBasedOnColor(hlfContext contractapi.Transaction
 	return nil
 }
 
-func (s *Service) GetHistoryForMarble(hlfContext contractapi.TransactionContextInterface, marbleName string) ([]byte, error) {
+func (s *Service) GetHistoryForMarble(hlfContext contractapi.TransactionContextInterface, marbleName string) (model.MarbleHistoryResponse, error) {
 	stub := hlfContext.GetStub()
 	ctx := context.Background()
 	ctx = context.WithValue(ctx, "stub", stub)
@@ -176,13 +200,27 @@ func (s *Service) GetHistoryForMarble(hlfContext contractapi.TransactionContextI
 	// }
 	// buffer.WriteString("]")
 
-	buffer, err := s.bl.GetHistoryForMarble(ctx, marbleName)
-	if err != nil {
-		//fmt.Printf("- getHistoryForMarble returning:\n%s\n", buffer.String())
-		fmt.Errorf("%s", "Failed to get marble history: "+err.Error())
-		return nil, err
-	}
-	fmt.Printf("- getHistoryForMarble returning:\n%s\n", buffer.String())
+	// buffer, err := s.bl.GetHistoryForMarble(ctx, marbleName)
+	// if err != nil {
+	// 	//fmt.Printf("- getHistoryForMarble returning:\n%s\n", buffer.String())
+	// 	fmt.Errorf("%s", "Failed to get marble history: "+err.Error())
+	// 	//return nil, err
+	// 	return shim.Error(err.Error())
+	// }
+	// fmt.Printf("- getHistoryForMarble returning:\n%s\n", buffer.String())
 
-	return buffer.Bytes(), nil
+	// //return buffer.Bytes(), nil
+	// return shim.Success(buffer.Bytes())
+	marbles, timestamps, err := s.bl.GetMarbleHistory(ctx, marbleName)
+	if err != nil {
+		// log err
+		return nil, fmt.Errorf("%s", "Failed to get marble history: "+err.Error())
+	}
+
+	result := make(model.MarbleHistoryResponse)
+
+	result.FromModel(marbles, timestamps)
+
+	return result, nil
+
 }
