@@ -1,11 +1,14 @@
 package logic
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 	"main/internal/model"
 	rep "main/internal/repository"
+	"strconv"
+	"time"
 
 	"github.com/hyperledger/fabric-chaincode-go/shim"
 )
@@ -103,4 +106,62 @@ func (s *Service) TransferMarblesBasedOnColor(ctx context.Context, color string,
 	}
 	//return s.repository.Repository.TransferMarble(ctx, marbleToTransfer)
 	return nil
+}
+
+func (s *Service) GetHistoryForMarble(ctx context.Context, marbleName string) (*bytes.Buffer, error) {
+	ptrStub := ctx.Value("stub")
+	if ptrStub == nil {
+		return nil, fmt.Errorf("no 'stub' in context")
+	}
+	stub := ptrStub.(shim.ChaincodeStubInterface)
+	resultsIterator, err := stub.GetHistoryForKey(marbleName)
+	if err != nil {
+		return nil, fmt.Errorf("%s", err.Error())
+	}
+	defer resultsIterator.Close()
+
+	// buffer is a JSON array containing historic values for the marble
+	var buffer bytes.Buffer
+	buffer.WriteString("[")
+
+	bArrayMemberAlreadyWritten := false
+	for resultsIterator.HasNext() {
+		response, err := resultsIterator.Next()
+		if err != nil {
+			return nil, fmt.Errorf("%s", err.Error())
+		}
+		// Add a comma before array members, suppress it for the first array member
+		if bArrayMemberAlreadyWritten == true {
+			buffer.WriteString(",")
+		}
+		buffer.WriteString("{\"TxId\":")
+		buffer.WriteString("\"")
+		buffer.WriteString(response.TxId)
+		buffer.WriteString("\"")
+
+		buffer.WriteString(", \"Value\":")
+		// if it was a delete operation on given key, then we need to set the
+		//corresponding value null. Else, we will write the response.Value
+		//as-is (as the Value itself a JSON marble)
+		if response.IsDelete {
+			buffer.WriteString("null")
+		} else {
+			buffer.WriteString(string(response.Value))
+		}
+
+		buffer.WriteString(", \"Timestamp\":")
+		buffer.WriteString("\"")
+		buffer.WriteString(time.Unix(response.Timestamp.Seconds, int64(response.Timestamp.Nanos)).String())
+		buffer.WriteString("\"")
+
+		buffer.WriteString(", \"IsDelete\":")
+		buffer.WriteString("\"")
+		buffer.WriteString(strconv.FormatBool(response.IsDelete))
+		buffer.WriteString("\"")
+
+		buffer.WriteString("}")
+		bArrayMemberAlreadyWritten = true
+	}
+	buffer.WriteString("]")
+	return &buffer, nil
 }
