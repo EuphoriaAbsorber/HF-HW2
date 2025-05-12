@@ -27,32 +27,17 @@ func (rep *RepositoryRealization) CreateMarble(ctx context.Context, marble *mode
 	if err != nil {
 		return fmt.Errorf("%s", err.Error())
 	}
-
-	// === Save marble to state ===
 	err = stub.PutState(marble.Name, marbleJSONasBytes)
 	if err != nil {
 		return fmt.Errorf("%s", err.Error())
 	}
-
-	//  ==== Index the marble to enable color-based range queries, e.g. return all blue marbles ====
-	//  An 'index' is a normal key/value entry in state.
-	//  The key is a composite key, with the elements that you want to range query on listed first.
-	//  In our case, the composite key is based on indexName~color~name.
-	//  This will enable very efficient state range queries based on composite keys matching indexName~color~*
 	indexName := "color~name"
 	colorNameIndexKey, err := stub.CreateCompositeKey(indexName, []string{marble.Color, marble.Name})
 	if err != nil {
 		return fmt.Errorf("%s", err.Error())
 	}
-	//  Save index entry to state. Only the key name is needed, no need to store a duplicate copy of the marble.
-	//  Note - passing a 'nil' value will effectively delete the key from state, therefore we pass null character as value
 	value := []byte{0x00}
 	stub.PutState(colorNameIndexKey, value)
-
-	// ==== Marble saved and indexed. Return success ====
-	fmt.Println("- end init marble")
-	//return shim.Success(nil)
-
 	return nil
 }
 
@@ -66,7 +51,7 @@ func (rep *RepositoryRealization) ReadMarble(ctx context.Context, name string) (
 	}
 
 	stub := ptrStub.(shim.ChaincodeStubInterface)
-	valAsbytes, err := stub.GetState(name) //get the marble from chaincode state
+	valAsbytes, err := stub.GetState(name)
 	if err != nil {
 		jsonResp = "{\"Error\":\"Failed to get state for " + name + "\"}"
 		return nil, fmt.Errorf("%s", jsonResp)
@@ -83,19 +68,15 @@ func (rep *RepositoryRealization) DeleteMarble(ctx context.Context, marbleJSON m
 		return fmt.Errorf("no 'stub' in context")
 	}
 	stub := ptrStub.(shim.ChaincodeStubInterface)
-	err := stub.DelState(marbleJSON.Name) //remove the marble from chaincode state
+	err := stub.DelState(marbleJSON.Name)
 	if err != nil {
 		return fmt.Errorf("%s", "failed to delete state:"+err.Error())
 	}
-
-	// maintain the index
 	indexName := "color~name"
 	colorNameIndexKey, err := stub.CreateCompositeKey(indexName, []string{marbleJSON.Color, marbleJSON.Name})
 	if err != nil {
 		return fmt.Errorf("%s", err.Error())
 	}
-
-	//  Delete index entry to state.
 	err = stub.DelState(colorNameIndexKey)
 	if err != nil {
 		return fmt.Errorf("%s", "failed to delete state:"+err.Error())
@@ -110,7 +91,7 @@ func (rep *RepositoryRealization) TransferMarble(ctx context.Context, marbleToTr
 	}
 	stub := ptrStub.(shim.ChaincodeStubInterface)
 	marbleJSONasBytes, _ := json.Marshal(marbleToTransfer)
-	err := stub.PutState(marbleToTransfer.Name, marbleJSONasBytes) //rewrite the marble
+	err := stub.PutState(marbleToTransfer.Name, marbleJSONasBytes)
 	if err != nil {
 		return fmt.Errorf("%s", err.Error())
 	}

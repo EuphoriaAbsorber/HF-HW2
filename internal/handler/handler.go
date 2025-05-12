@@ -44,15 +44,12 @@ func (s *Service) InitMarble(hlfContext contractapi.TransactionContextInterface,
 		fmt.Println("This marble already exists: " + marbleName)
 		return fmt.Errorf("%s", "This marble already exists: "+marbleName)
 	}
-
-	// ==== Create marble object and marshal to JSON ====
 	objectType := "marble"
 	marble := &model.Marble{ObjectType: objectType, Name: marbleName, Color: color, Size: size, Owner: owner}
 	err = s.bl.CreateMarble(ctx, marble)
 	if err != nil {
 		return fmt.Errorf("could not create marble")
 	}
-	// ==== Marble saved and indexed. Return success ====
 	fmt.Println("- end init marble")
 	return nil
 }
@@ -93,8 +90,7 @@ func (s *Service) Delete(hlfContext contractapi.TransactionContextInterface, mar
 		return fmt.Errorf("failed to get x509 certificate: %v", err)
 	}
 
-	// to maintain the color~name index, we need to read the marble first and get its color
-	valAsbytes, err := stub.GetState(marbleName) //get the marble from chaincode state
+	valAsbytes, err := stub.GetState(marbleName)
 	if err != nil {
 		jsonResp = "{\"Error\":\"Failed to get state for " + marbleName + "\"}"
 		return fmt.Errorf("%s", jsonResp)

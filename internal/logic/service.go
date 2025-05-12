@@ -52,11 +52,11 @@ func (s *Service) TransferMarble(ctx context.Context, marbleName string, newOwne
 	}
 
 	marbleToTransfer := model.Marble{}
-	err = json.Unmarshal(marbleAsBytes, &marbleToTransfer) //unmarshal it aka JSON.parse()
+	err = json.Unmarshal(marbleAsBytes, &marbleToTransfer)
 	if err != nil {
 		return fmt.Errorf("%s", err.Error())
 	}
-	marbleToTransfer.Owner = newOwner //change the owner
+	marbleToTransfer.Owner = newOwner
 	return s.repository.Repository.TransferMarble(ctx, marbleToTransfer)
 }
 
@@ -72,16 +72,12 @@ func (s *Service) TransferMarblesBasedOnColor(ctx context.Context, color string,
 	}
 	defer coloredMarbleResultsIterator.Close()
 
-	// Iterate through result set and for each marble found, transfer to newOwner
 	var i int
 	for i = 0; coloredMarbleResultsIterator.HasNext(); i++ {
-		// Note that we don't get the value (2nd return variable), we'll just get the marble name from the composite key
 		responseRange, err := coloredMarbleResultsIterator.Next()
 		if err != nil {
 			return fmt.Errorf("%s", err.Error())
 		}
-
-		// get the color and name from color~name composite key
 		objectType, compositeKeyParts, err := stub.SplitCompositeKey(responseRange.Key)
 		if err != nil {
 			return fmt.Errorf("%s", err.Error())
@@ -89,12 +85,7 @@ func (s *Service) TransferMarblesBasedOnColor(ctx context.Context, color string,
 		returnedColor := compositeKeyParts[0]
 		returnedMarbleName := compositeKeyParts[1]
 		fmt.Printf("- found a marble from index:%s color:%s name:%s\n", objectType, returnedColor, returnedMarbleName)
-
-		// Now call the transfer function for the found marble.
-		// Re-use the same function that is used to transfer individual marbles
-		//err = s.TransferMarble(stub, []string{returnedMarbleName, newOwner})
 		err = s.TransferMarble(ctx, returnedMarbleName, newOwner)
-		// if the transfer failed break out of loop and return error
 		if err != nil {
 			return fmt.Errorf("%s", "Transfer failed: "+err.Error())
 		}
