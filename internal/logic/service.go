@@ -33,3 +33,27 @@ func (s *Service) CreateMarble(ctx context.Context, marble *model.Marble) error 
 
 	return nil
 }
+
+func (s *Service) ReadMarble(ctx context.Context, name string) ([]byte, error) {
+	// item := &model.Asset{
+	// 	ID:             id,
+	// 	AppraisedValue: appraisedValue,
+	// 	Color:          color,
+	// 	Size:           size,
+	// 	Owner:          owner,
+	// }
+
+	return s.repository.Repository.ReadMarble(ctx, name)
+}
+
+func (s *Service) DeleteMarble(ctx context.Context, marbleJSON model.Marble) error {
+	// item := &model.Asset{
+	// 	ID:             id,
+	// 	AppraisedValue: appraisedValue,
+	// 	Color:          color,
+	// 	Size:           size,
+	// 	Owner:          owner,
+	// }
+
+	return s.repository.Repository.DeleteMarble(ctx, marbleJSON)
+}

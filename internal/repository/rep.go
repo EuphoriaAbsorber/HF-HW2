@@ -78,3 +78,54 @@ func (rep *RepositoryRealization) CreateMarble(ctx context.Context, marble *mode
 
 	return nil
 }
+
+func (rep *RepositoryRealization) ReadMarble(ctx context.Context, name string) ([]byte, error) {
+	var jsonResp string
+	var err error
+
+	// if len(args) != 1 {
+	// 	return nil, fmt.Errorf("incorrect number of arguments. Expecting name of the marble to query")
+	// }
+
+	ptrStub := ctx.Value("stub")
+	if ptrStub == nil {
+		return nil, fmt.Errorf("no 'stub' in context")
+	}
+
+	stub := ptrStub.(shim.ChaincodeStubInterface)
+	valAsbytes, err := stub.GetState(name) //get the marble from chaincode state
+	if err != nil {
+		jsonResp = "{\"Error\":\"Failed to get state for " + name + "\"}"
+		return nil, fmt.Errorf("%s", jsonResp)
+	} else if valAsbytes == nil {
+		jsonResp = "{\"Error\":\"Marble does not exist: " + name + "\"}"
+		return nil, fmt.Errorf("%s", jsonResp)
+	}
+	return valAsbytes, nil
+}
+
+func (rep *RepositoryRealization) DeleteMarble(ctx context.Context, marbleJSON model.Marble) error {
+	ptrStub := ctx.Value("stub")
+	if ptrStub == nil {
+		return fmt.Errorf("no 'stub' in context")
+	}
+	stub := ptrStub.(shim.ChaincodeStubInterface)
+	err := stub.DelState(marbleJSON.Name) //remove the marble from chaincode state
+	if err != nil {
+		return fmt.Errorf("%s", "failed to delete state:"+err.Error())
+	}
+
+	// maintain the index
+	indexName := "color~name"
+	colorNameIndexKey, err := stub.CreateCompositeKey(indexName, []string{marbleJSON.Color, marbleJSON.Name})
+	if err != nil {
+		return fmt.Errorf("%s", err.Error())
+	}
+
+	//  Delete index entry to state.
+	err = stub.DelState(colorNameIndexKey)
+	if err != nil {
+		return fmt.Errorf("%s", "failed to delete state:"+err.Error())
+	}
+	return nil
+}
