@@ -19,10 +19,8 @@ type MarbleHistoryResponseItem struct {
 
 type MarbleHistoryResponse map[string]MarbleHistoryResponseItem
 
-func (item MarbleHistoryResponse) FromModel(assets map[string]Marble, timestamps map[string]time.Time) {
-	for k, a := range assets {
-		//var marbleResponse Marble
-		//marbleResponse.FromModel(&a)
+func (item MarbleHistoryResponse) FromModel(marbles map[string]Marble, timestamps map[string]time.Time) {
+	for k, a := range marbles {
 		item[k] = MarbleHistoryResponseItem{
 			TxId:      k,
 			Value:     a,
@@ -31,21 +29,3 @@ func (item MarbleHistoryResponse) FromModel(assets map[string]Marble, timestamps
 		}
 	}
 }
-
-// func (item *GetMarbleResponse) FromModel(in *Marble) {
-// 	/*
-// 		item.ID = in.ID
-// 		item.AppraisedValue = in.AppraisedValue
-// 		item.Color = in.Color
-// 		item.Size = in.Size
-// 		item.Owner = in.Owner
-// 	*/
-
-// 	*item = GetAssetResponse{
-// 		ID:             in.ID,
-// 		AppraisedValue: in.AppraisedValue,
-// 		Color:          in.Color,
-// 		Size:           0,
-// 		Owner:          in.Owner,
-// 	}
-// }

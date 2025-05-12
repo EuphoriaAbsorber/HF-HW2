@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	log "main/internal/logic"
+	logic "main/internal/logic"
 	"main/internal/model"
 	"strings"
 
@@ -14,10 +14,10 @@ import (
 type Service struct {
 	contractapi.Contract
 
-	bl *log.Service
+	bl *logic.Service
 }
 
-func NewService(bl *log.Service) *Service {
+func NewService(bl *logic.Service) *Service {
 	return &Service{
 		bl: bl,
 	}
@@ -150,70 +150,8 @@ func (s *Service) GetHistoryForMarble(hlfContext contractapi.TransactionContextI
 
 	fmt.Printf("- start getHistoryForMarble: %s\n", marbleName)
 
-	// resultsIterator, err := stub.GetHistoryForKey(marbleName)
-	// if err != nil {
-	// 	return nil, fmt.Errorf("%s", err.Error())
-	// }
-	// defer resultsIterator.Close()
-
-	// // buffer is a JSON array containing historic values for the marble
-	// var buffer bytes.Buffer
-	// buffer.WriteString("[")
-
-	// bArrayMemberAlreadyWritten := false
-	// for resultsIterator.HasNext() {
-	// 	response, err := resultsIterator.Next()
-	// 	if err != nil {
-	// 		return nil, fmt.Errorf("%s", err.Error())
-	// 	}
-	// 	// Add a comma before array members, suppress it for the first array member
-	// 	if bArrayMemberAlreadyWritten == true {
-	// 		buffer.WriteString(",")
-	// 	}
-	// 	buffer.WriteString("{\"TxId\":")
-	// 	buffer.WriteString("\"")
-	// 	buffer.WriteString(response.TxId)
-	// 	buffer.WriteString("\"")
-
-	// 	buffer.WriteString(", \"Value\":")
-	// 	// if it was a delete operation on given key, then we need to set the
-	// 	//corresponding value null. Else, we will write the response.Value
-	// 	//as-is (as the Value itself a JSON marble)
-	// 	if response.IsDelete {
-	// 		buffer.WriteString("null")
-	// 	} else {
-	// 		buffer.WriteString(string(response.Value))
-	// 	}
-
-	// 	buffer.WriteString(", \"Timestamp\":")
-	// 	buffer.WriteString("\"")
-	// 	buffer.WriteString(time.Unix(response.Timestamp.Seconds, int64(response.Timestamp.Nanos)).String())
-	// 	buffer.WriteString("\"")
-
-	// 	buffer.WriteString(", \"IsDelete\":")
-	// 	buffer.WriteString("\"")
-	// 	buffer.WriteString(strconv.FormatBool(response.IsDelete))
-	// 	buffer.WriteString("\"")
-
-	// 	buffer.WriteString("}")
-	// 	bArrayMemberAlreadyWritten = true
-	// }
-	// buffer.WriteString("]")
-
-	// buffer, err := s.bl.GetHistoryForMarble(ctx, marbleName)
-	// if err != nil {
-	// 	//fmt.Printf("- getHistoryForMarble returning:\n%s\n", buffer.String())
-	// 	fmt.Errorf("%s", "Failed to get marble history: "+err.Error())
-	// 	//return nil, err
-	// 	return shim.Error(err.Error())
-	// }
-	// fmt.Printf("- getHistoryForMarble returning:\n%s\n", buffer.String())
-
-	// //return buffer.Bytes(), nil
-	// return shim.Success(buffer.Bytes())
 	marbles, timestamps, err := s.bl.GetMarbleHistory(ctx, marbleName)
 	if err != nil {
-		// log err
 		return nil, fmt.Errorf("%s", "Failed to get marble history: "+err.Error())
 	}
 

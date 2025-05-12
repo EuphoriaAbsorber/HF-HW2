@@ -126,24 +126,24 @@ func (rep *RepositoryRealization) GetMarbleHistory(ctx context.Context, id strin
 
 	iter, err := stub.GetHistoryForKey(id)
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to get history for asset: %w", err)
+		return nil, nil, fmt.Errorf("failed to get history for marble: %w", err)
 	}
 
-	resultAssets := make(map[string]model.Marble, 0)
+	resultMarbles := make(map[string]model.Marble, 0)
 	resultTimstamps := make(map[string]time.Time, 0)
 
 	for iter.HasNext() {
 		kv, err := iter.Next()
 		if err != nil {
-			return nil, nil, fmt.Errorf("failed to read asset history: %w", err)
+			return nil, nil, fmt.Errorf("failed to read marble history: %w", err)
 		}
-		var asset model.Marble
-		err = json.Unmarshal(kv.Value, &asset)
+		var marble model.Marble
+		err = json.Unmarshal(kv.Value, &marble)
 		if err != nil {
-			return nil, nil, fmt.Errorf("failed to unmarshal asset history: %w", err)
+			return nil, nil, fmt.Errorf("failed to unmarshal marble history: %w", err)
 		}
 		resultTimstamps[kv.TxId] = kv.Timestamp.AsTime()
-		resultAssets[kv.TxId] = asset
+		resultMarbles[kv.TxId] = marble
 	}
-	return resultAssets, resultTimstamps, nil
+	return resultMarbles, resultTimstamps, nil
 }
