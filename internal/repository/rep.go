@@ -83,10 +83,6 @@ func (rep *RepositoryRealization) ReadMarble(ctx context.Context, name string) (
 	var jsonResp string
 	var err error
 
-	// if len(args) != 1 {
-	// 	return nil, fmt.Errorf("incorrect number of arguments. Expecting name of the marble to query")
-	// }
-
 	ptrStub := ctx.Value("stub")
 	if ptrStub == nil {
 		return nil, fmt.Errorf("no 'stub' in context")
@@ -126,6 +122,20 @@ func (rep *RepositoryRealization) DeleteMarble(ctx context.Context, marbleJSON m
 	err = stub.DelState(colorNameIndexKey)
 	if err != nil {
 		return fmt.Errorf("%s", "failed to delete state:"+err.Error())
+	}
+	return nil
+}
+
+func (rep *RepositoryRealization) TransferMarble(ctx context.Context, marbleToTransfer model.Marble) error {
+	ptrStub := ctx.Value("stub")
+	if ptrStub == nil {
+		return fmt.Errorf("no 'stub' in context")
+	}
+	stub := ptrStub.(shim.ChaincodeStubInterface)
+	marbleJSONasBytes, _ := json.Marshal(marbleToTransfer)
+	err := stub.PutState(marbleToTransfer.Name, marbleJSONasBytes) //rewrite the marble
+	if err != nil {
+		return fmt.Errorf("%s", err.Error())
 	}
 	return nil
 }

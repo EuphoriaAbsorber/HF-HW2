@@ -148,30 +148,12 @@ func (s *Service) InitMarble(hlfContext contractapi.TransactionContextInterface,
 	// ==== Marble saved and indexed. Return success ====
 	fmt.Println("- end init marble")
 	return nil
-
 }
 
 func (s *Service) ReadMarble(hlfContext contractapi.TransactionContextInterface, name string) (*model.Marble, error) {
-	//var name, jsonResp string
-	// var jsonResp string
-	// var err error
-
-	// if len(args) != 1 {
-	// 	return nil, fmt.Errorf("incorrect number of arguments. Expecting name of the marble to query")
-	// }
-
 	stub := hlfContext.GetStub()
 	ctx := context.Background()
 	ctx = context.WithValue(ctx, "stub", stub)
-	//name = args[0]
-	// valAsbytes, err := stub.GetState(name) //get the marble from chaincode state
-	// if err != nil {
-	// 	jsonResp = "{\"Error\":\"Failed to get state for " + name + "\"}"
-	// 	return nil, fmt.Errorf("%s", jsonResp)
-	// } else if valAsbytes == nil {
-	// 	jsonResp = "{\"Error\":\"Marble does not exist: " + name + "\"}"
-	// 	return nil, fmt.Errorf("%s", jsonResp)
-	// }
 
 	bytes, err := s.bl.ReadMarble(ctx, name)
 	if err != nil {
@@ -189,10 +171,6 @@ func (s *Service) ReadMarble(hlfContext contractapi.TransactionContextInterface,
 func (s *Service) Delete(hlfContext contractapi.TransactionContextInterface, marbleName string) error {
 	var jsonResp string
 	var marbleJSON model.Marble
-	// if len(args) != 1 {
-	// 	return fmt.Errorf("incorrect number of arguments. Expecting 1")
-	// }
-	//marbleName := args[0]
 
 	stub := hlfContext.GetStub()
 	ctx := context.Background()
@@ -213,28 +191,12 @@ func (s *Service) Delete(hlfContext contractapi.TransactionContextInterface, mar
 		return fmt.Errorf("%s", jsonResp)
 	}
 	return s.bl.DeleteMarble(ctx, marbleJSON)
-	// err = stub.DelState(marbleName) //remove the marble from chaincode state
-	// if err != nil {
-	// 	return fmt.Errorf("%s", "failed to delete state:"+err.Error())
-	// }
-
-	// // maintain the index
-	// indexName := "color~name"
-	// colorNameIndexKey, err := stub.CreateCompositeKey(indexName, []string{marbleJSON.Color, marbleJSON.Name})
-	// if err != nil {
-	// 	return fmt.Errorf("%s", err.Error())
-	// }
-
-	// //  Delete index entry to state.
-	// err = stub.DelState(colorNameIndexKey)
-	// if err != nil {
-	// 	return fmt.Errorf("%s", "failed to delete state:"+err.Error())
-	// }
-	// return nil
 }
 
 func (s *Service) TransferMarble(hlfContext contractapi.TransactionContextInterface, marbleName string, newOwner string) error {
 	stub := hlfContext.GetStub()
+	ctx := context.Background()
+	ctx = context.WithValue(ctx, "stub", stub)
 	//   0       1
 	// "name", "bob"
 	// if len(args) < 2 {
@@ -244,28 +206,88 @@ func (s *Service) TransferMarble(hlfContext contractapi.TransactionContextInterf
 	//marbleName := args[0]
 	newOwner = strings.ToLower(newOwner)
 	fmt.Println("- start transferMarble ", marbleName, newOwner)
+	s.bl.TransferMarble(ctx, marbleName, newOwner)
+	// marbleAsBytes, err := stub.GetState(marbleName)
+	// if err != nil {
+	// 	return fmt.Errorf("%s", "Failed to get marble:"+err.Error())
+	// } else if marbleAsBytes == nil {
+	// 	return fmt.Errorf("%s", "Marble does not exist")
+	// }
 
-	marbleAsBytes, err := stub.GetState(marbleName)
-	if err != nil {
-		return fmt.Errorf("%s", "Failed to get marble:"+err.Error())
-	} else if marbleAsBytes == nil {
-		return fmt.Errorf("%s", "Marble does not exist")
-	}
-
-	marbleToTransfer := &model.Marble{}
-	err = json.Unmarshal(marbleAsBytes, &marbleToTransfer) //unmarshal it aka JSON.parse()
-	if err != nil {
-		return fmt.Errorf("%s", err.Error())
-	}
-	marbleToTransfer.Owner = newOwner //change the owner
-
+	// marbleToTransfer := &model.Marble{}
+	// err = json.Unmarshal(marbleAsBytes, &marbleToTransfer) //unmarshal it aka JSON.parse()
+	// if err != nil {
+	// 	return fmt.Errorf("%s", err.Error())
+	// }
+	// marbleToTransfer.Owner = newOwner //change the owner
+	//
+	//
+	// s.bl.TransferMarble(ctx, *marbleToTransfer)
 	//s.bl.TransferMarble()
-	marbleJSONasBytes, _ := json.Marshal(marbleToTransfer)
-	err = stub.PutState(marbleName, marbleJSONasBytes) //rewrite the marble
-	if err != nil {
-		return fmt.Errorf("%s", err.Error())
-	}
+	// marbleJSONasBytes, _ := json.Marshal(marbleToTransfer)
+	// err = stub.PutState(marbleName, marbleJSONasBytes) //rewrite the marble
+	// if err != nil {
+	// 	return fmt.Errorf("%s", err.Error())
+	// }
 
 	fmt.Println("- end transferMarble (success)")
+	return nil
+}
+
+func (s *Service) TransferMarblesBasedOnColor(hlfContext contractapi.TransactionContextInterface, color string, newOwner string) error {
+	stub := hlfContext.GetStub()
+	ctx := context.Background()
+	ctx = context.WithValue(ctx, "stub", stub)
+	//   0       1
+	// "color", "bob"
+	// if len(args) < 2 {
+	// 	return shim.Error("Incorrect number of arguments. Expecting 2")
+	// }
+
+	//color := args[0]
+	newOwner = strings.ToLower(newOwner)
+	fmt.Println("- start transferMarblesBasedOnColor ", color, newOwner)
+	s.bl.TransferMarblesBasedOnColor(ctx, color, newOwner)
+	// Query the color~name index by color
+	// This will execute a key range query on all keys starting with 'color'
+	// coloredMarbleResultsIterator, err := stub.GetStateByPartialCompositeKey("color~name", []string{color})
+	// if err != nil {
+	// 	return fmt.Errorf("%s", err.Error())
+	// }
+	// defer coloredMarbleResultsIterator.Close()
+
+	// // Iterate through result set and for each marble found, transfer to newOwner
+	// var i int
+	// for i = 0; coloredMarbleResultsIterator.HasNext(); i++ {
+	// 	// Note that we don't get the value (2nd return variable), we'll just get the marble name from the composite key
+	// 	responseRange, err := coloredMarbleResultsIterator.Next()
+	// 	if err != nil {
+	// 		return fmt.Errorf("%s", err.Error())
+	// 	}
+
+	// 	// get the color and name from color~name composite key
+	// 	objectType, compositeKeyParts, err := stub.SplitCompositeKey(responseRange.Key)
+	// 	if err != nil {
+	// 		return fmt.Errorf("%s", err.Error())
+	// 	}
+	// 	returnedColor := compositeKeyParts[0]
+	// 	returnedMarbleName := compositeKeyParts[1]
+	// 	fmt.Printf("- found a marble from index:%s color:%s name:%s\n", objectType, returnedColor, returnedMarbleName)
+
+	// 	// Now call the transfer function for the found marble.
+	// 	// Re-use the same function that is used to transfer individual marbles
+	// 	err = s.TransferMarble(stub, []string{returnedMarbleName, newOwner})
+	// 	// if the transfer failed break out of loop and return error
+	// 	if err != nil {
+	// 		return fmt.Errorf("%s", "Transfer failed: "+err.Error())
+	// 	}
+	// 	// if response.Status != shim.OK {
+	// 	// 	return shim.Error("Transfer failed: " + response.Message)
+	// 	// }
+	// }
+
+	responsePayload := fmt.Sprintf("Transferred %d %s marbles to %s", i, color, newOwner)
+	fmt.Println("- end transferMarblesBasedOnColor: " + responsePayload)
+	//return shim.Success([]byte(responsePayload))
 	return nil
 }

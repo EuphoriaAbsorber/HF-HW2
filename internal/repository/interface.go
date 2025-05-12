@@ -9,6 +9,7 @@ type RepositoryInterface interface {
 	CreateMarble(ctx context.Context, marble *model.Marble) error
 	ReadMarble(ctx context.Context, name string) ([]byte, error)
 	DeleteMarble(ctx context.Context, marbleJSON model.Marble) error
+	TransferMarble(ctx context.Context, marbleToTransfer model.Marble) error
 }
 
 type Service struct {
